@@ -116,9 +116,10 @@ export const DraggableComponent = ({
   const zoom = useAppStore((s) =>
     s.selectedItem?.props.id === id ? s.zoomConfig.zoom : 1
   );
-  const overrides = useAppStore((s) => s.overrides);
+  const CustomActionBar = useAppStore((s) => s.overrides.actionBar) || DefaultActionBar;
+  const CustomOverlay = useAppStore((s) => s.overrides.componentOverlay) || DefaultOverlay;
   const dispatch = useAppStore((s) => s.dispatch);
-  const iframe = useAppStore((s) => s.iframe);
+  const iframeEnabled = useAppStore((s) => !!s.iframe.enabled);
 
   const ctx = useContext(dropZoneContext);
 
@@ -247,12 +248,12 @@ export const DraggableComponent = ({
 
   useEffect(() => {
     setPortalEl(
-      iframe.enabled
+      iframeEnabled
         ? ref.current?.ownerDocument.body
         : ref.current?.closest<HTMLElement>("[data-puck-preview]") ??
             document.body
     );
-  }, [iframe.enabled, ref.current]);
+  }, [iframeEnabled, ref.current]);
 
   const getStyle = useCallback(() => {
     if (!ref.current) return;
@@ -260,7 +261,7 @@ export const DraggableComponent = ({
     const rect = ref.current!.getBoundingClientRect();
     const deepScrollPosition = getDeepScrollPosition(ref.current);
 
-    const portalContainerEl = iframe.enabled
+    const portalContainerEl = iframeEnabled
       ? null
       : ref.current?.closest<HTMLElement>("[data-puck-preview]");
 
@@ -299,7 +300,7 @@ export const DraggableComponent = ({
 
   const sync = useCallback(() => {
     setStyle(getStyle());
-  }, [ref.current, iframe]);
+  }, [ref.current, iframeEnabled]);
 
   useEffect(() => {
     if (ref.current) {
@@ -323,9 +324,21 @@ export const DraggableComponent = ({
     setIsVisible(true);
   }, []);
 
+  // Stable refs for registerNode — avoids re-registration when sync/overlay callbacks change
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
+  const showOverlayRef = useRef(showOverlay);
+  showOverlayRef.current = showOverlay;
+  const hideOverlayRef = useRef(hideOverlay);
+  hideOverlayRef.current = hideOverlay;
+
   useEffect(() => {
     registerNode(id, {
-      methods: { sync, showOverlay, hideOverlay },
+      methods: {
+        sync: () => syncRef.current(),
+        showOverlay: () => showOverlayRef.current(),
+        hideOverlay: () => hideOverlayRef.current(),
+      },
       element: ref.current ?? null,
     });
 
@@ -339,17 +352,7 @@ export const DraggableComponent = ({
         element: null,
       });
     };
-  }, [id, zoneCompound, index, componentType, sync]);
-
-  const CustomActionBar = useMemo(
-    () => overrides.actionBar || DefaultActionBar,
-    [overrides.actionBar]
-  );
-
-  const CustomOverlay = useMemo(
-    () => overrides.componentOverlay || DefaultOverlay,
-    [overrides.componentOverlay]
-  );
+  }, [id, registerNode]);
 
   const onClick = useCallback(
     (e: Event | SyntheticEvent) => {
@@ -498,7 +501,7 @@ export const DraggableComponent = ({
         setIsVisible(false);
       }
     });
-  }, [hover, indicativeHover, isSelected, iframe]);
+  }, [hover, indicativeHover, isSelected, iframeEnabled]);
 
   const [thisWasDragging, setThisWasDragging] = useState(false);
 

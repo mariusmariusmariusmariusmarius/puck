@@ -244,7 +244,22 @@ export const useRegisterPermissionsSlice = (
     return appStore.subscribe(
       (s) => s.state.data,
       () => {
+        // Skip permission resolution during drag — permissions don't change
+        // from move/reorder. Will be resolved when isDragging becomes false.
+        if (appStore.getState().state.ui.isDragging) return;
         appStore.getState().permissions.resolvePermissions();
+      }
+    );
+  }, []);
+
+  // Resolve permissions when drag ends
+  useEffect(() => {
+    return appStore.subscribe(
+      (s) => s.state.ui.isDragging,
+      (isDragging) => {
+        if (!isDragging) {
+          appStore.getState().permissions.resolvePermissions();
+        }
       }
     );
   }, []);

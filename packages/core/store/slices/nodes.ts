@@ -18,56 +18,75 @@ export type NodesSlice = {
   unregisterNode: (id: string, node?: Partial<PuckNodeInstance>) => void;
 };
 
+const emptyMethods: NodeMethods = {
+  sync: () => null,
+  hideOverlay: () => null,
+  showOverlay: () => null,
+};
+
 export const createNodesSlice = (
   set: (newState: Partial<AppStore>) => void,
   get: () => AppStore
-): NodesSlice => ({
-  nodes: {},
-  registerNode: (id: string, node: Partial<PuckNodeInstance>) => {
+): NodesSlice => {
+  let pendingRegistrations = new Map<string, Partial<PuckNodeInstance>>();
+  let flushScheduled = false;
+
+  const flushRegistrations = () => {
+    const pending = pendingRegistrations;
+    pendingRegistrations = new Map();
+    flushScheduled = false;
+
+    if (pending.size === 0) return;
+
     const s = get().nodes;
+    const newNodes = { ...s.nodes };
 
-    const emptyNode: PuckNodeInstance = {
-      id,
-      methods: {
-        sync: () => null,
-        hideOverlay: () => null,
-        showOverlay: () => null,
-      },
-      element: null,
-    };
+    for (const [id, node] of pending) {
+      const existing = newNodes[id];
 
-    const existingNode: PuckNodeInstance | undefined = s.nodes[id];
+      newNodes[id] = {
+        methods: emptyMethods,
+        element: null,
+        ...existing,
+        ...node,
+        id,
+      };
+    }
 
     set({
       nodes: {
         ...s,
-        nodes: {
-          ...s.nodes,
-          [id]: {
-            ...emptyNode,
-            ...existingNode,
-            ...node,
-            id,
-          },
-        },
+        nodes: newNodes,
       },
     });
-  },
-  unregisterNode: (id) => {
-    const s = get().nodes;
-    const existingNode: PuckNodeInstance | undefined = s.nodes[id];
+  };
 
-    if (existingNode) {
-      const newNodes = { ...s.nodes };
+  return {
+    nodes: {},
+    registerNode: (id: string, node: Partial<PuckNodeInstance>) => {
+      pendingRegistrations.set(id, node);
 
-      delete newNodes[id];
+      if (!flushScheduled) {
+        flushScheduled = true;
+        queueMicrotask(flushRegistrations);
+      }
+    },
+    unregisterNode: (id) => {
+      const s = get().nodes;
+      const existingNode: PuckNodeInstance | undefined = s.nodes[id];
 
-      set({
-        nodes: {
-          ...s,
-          nodes: newNodes,
-        },
-      });
-    }
-  },
-});
+      if (existingNode) {
+        const newNodes = { ...s.nodes };
+
+        delete newNodes[id];
+
+        set({
+          nodes: {
+            ...s,
+            nodes: newNodes,
+          },
+        });
+      }
+    },
+  };
+};
