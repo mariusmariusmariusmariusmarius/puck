@@ -2,7 +2,7 @@
 import { EditorFallback } from "../../../components/RichTextEditor/components/EditorFallback";
 import { RichTextRenderFallback } from "../../../components/RichTextEditor/components/RenderFallback";
 import { FieldTransforms } from "../../../types/API/FieldTransforms";
-import { useAppStoreApi } from "../../../store";
+import { useAppStore, useAppStoreApi } from "../../../store";
 import { setDeep } from "../../../lib/data/set-deep";
 import { registerOverlayPortal } from "../../../lib/overlay-portal";
 import {
@@ -16,6 +16,7 @@ import {
 } from "react";
 import type { Editor as TipTapEditor, JSONContent } from "@tiptap/react";
 import { getSelectorForId } from "../../get-selector-for-id";
+import { rootDroppableId } from "../../root-droppable-id";
 import { RichtextField, UiState } from "../../../types";
 
 const Editor = lazy(() =>
@@ -56,12 +57,24 @@ const InlineEditorWrapper = memo(
       e.preventDefault();
       e.stopPropagation();
 
-      const itemSelector = getSelectorForId(
-        appStoreApi.getState().state,
-        componentId
-      );
+      const s = appStoreApi.getState();
+      const currentSelector = s.state.ui.itemSelector;
 
-      appStoreApi.getState().setUi({ itemSelector });
+      // If another component is selected → deselect only (click-to-deselect pattern).
+      // Next click will select this component normally.
+      if (currentSelector) {
+        const zone = currentSelector.zone || rootDroppableId;
+        const selectedId =
+          s.state.indexes.zones[zone]?.contentIds[currentSelector.index];
+
+        if (selectedId !== componentId) {
+          s.setUi({ itemSelector: null });
+          return;
+        }
+      }
+
+      const itemSelector = getSelectorForId(s.state, componentId);
+      s.setUi({ itemSelector });
     };
 
     // Register portal once
@@ -72,6 +85,28 @@ const InlineEditorWrapper = memo(
       });
       return () => cleanup?.();
     }, [portalRef.current]);
+
+    // Blur editor when component is deselected.
+    // Puck's deselect (itemSelector → null) does not cause a DOM blur on the
+    // TipTap editor, so currentRichText stays set and the cursor keeps blinking.
+    const isEditorActiveButDeselected = useAppStore((s) => {
+      if (s.currentRichText?.inlineComponentId !== componentId) return false;
+      const selector = s.state.ui.itemSelector;
+      if (!selector) return true;
+      const zone = selector.zone || rootDroppableId;
+      const selectedId =
+        s.state.indexes.zones[zone]?.contentIds[selector.index];
+      return selectedId !== componentId;
+    });
+
+    useEffect(() => {
+      if (!isEditorActiveButDeselected) return;
+      const richText = appStoreApi.getState().currentRichText;
+      if (richText?.inlineComponentId === componentId) {
+        richText.editor.commands.blur();
+        appStoreApi.setState({ currentRichText: null });
+      }
+    }, [isEditorActiveButDeselected, appStoreApi, componentId]);
 
     const handleChange = useCallback(
       async (content: string | JSONContent, ui?: Partial<UiState>) => {

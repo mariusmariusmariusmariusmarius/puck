@@ -7,6 +7,7 @@ import styles from "./styles.module.css";
 import { getClassNameFactory } from "../../lib";
 import { setDeep } from "../../lib/data/set-deep";
 import { getSelectorForId } from "../../lib/get-selector-for-id";
+import { rootDroppableId } from "../../lib/root-droppable-id";
 
 const getClassName = getClassNameFactory("InlineTextField", styles);
 
@@ -105,12 +106,24 @@ const InlineTextFieldInternal = ({
         e.preventDefault();
         e.stopPropagation();
 
-        const itemSelector = getSelectorForId(
-          appStoreApi.getState().state,
-          componentId
-        );
+        const s = appStoreApi.getState();
+        const currentSelector = s.state.ui.itemSelector;
 
-        appStoreApi.getState().setUi({ itemSelector });
+        // If another component is selected → deselect only (click-to-deselect pattern).
+        // Next click will select this component normally.
+        if (currentSelector) {
+          const zone = currentSelector.zone || rootDroppableId;
+          const selectedId =
+            s.state.indexes.zones[zone]?.contentIds[currentSelector.index];
+
+          if (selectedId !== componentId) {
+            s.setUi({ itemSelector: null });
+            return;
+          }
+        }
+
+        const itemSelector = getSelectorForId(s.state, componentId);
+        s.setUi({ itemSelector });
       }}
       onKeyDown={(e) => {
         e.stopPropagation();

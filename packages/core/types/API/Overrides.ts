@@ -28,6 +28,7 @@ export type Overrides<UserConfig extends Config = Config> = OverridesGeneric<{
   header: RenderFunc<{ actions: ReactNode; children: ReactNode }>;
   actionBar: RenderFunc<{
     label?: string;
+    componentType: string;
     children: ReactNode;
     parentAction: ReactNode;
   }>;

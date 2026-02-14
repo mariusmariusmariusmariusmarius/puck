@@ -51,6 +51,7 @@ const DefaultActionBar = ({
   parentAction,
 }: {
   label: string | undefined;
+  componentType: string;
   children: ReactNode;
   parentAction: ReactNode;
 }) => (
@@ -354,6 +355,8 @@ export const DraggableComponent = ({
     };
   }, [id, registerNode]);
 
+  const appStore = useAppStoreApi();
+
   const onClick = useCallback(
     (e: Event | SyntheticEvent) => {
       const el = e.target as Element;
@@ -369,6 +372,14 @@ export const DraggableComponent = ({
             itemSelector: null,
           },
         });
+      } else if (appStore.getState().state.ui.itemSelector !== null) {
+        // Another component is selected — deselect first (click-to-deselect pattern)
+        dispatch({
+          type: "setUi",
+          ui: {
+            itemSelector: null,
+          },
+        });
       } else {
         dispatch({
           type: "setUi",
@@ -378,10 +389,8 @@ export const DraggableComponent = ({
         });
       }
     },
-    [index, zoneCompound, id, isSelected]
+    [index, zoneCompound, id, isSelected, appStore]
   );
-
-  const appStore = useAppStoreApi();
 
   const onSelectParent = useCallback(() => {
     const { nodes, zones } = appStore.getState().state.indexes;
@@ -486,6 +495,17 @@ export const DraggableComponent = ({
     thisIsDragging,
     inDroppableZone,
   ]);
+
+  // Selection attribute — separate effect to avoid re-mounting event listeners on select toggle
+  useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current as HTMLElement;
+    if (isSelected) {
+      el.setAttribute("data-puck-selected", "");
+    } else {
+      el.removeAttribute("data-puck-selected");
+    }
+  }, [isSelected]);
 
   const [isVisible, setIsVisible] = useState(false);
   const [dragFinished, setDragFinished] = useState(true);
@@ -657,6 +677,7 @@ export const DraggableComponent = ({
                 <CustomActionBar
                   parentAction={parentAction}
                   label={DEBUG ? id : label}
+                  componentType={componentType}
                 >
                   {richText && (
                     <>
