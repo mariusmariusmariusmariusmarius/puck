@@ -1,0 +1,87 @@
+/* css-module:/Users/mariusmuller/puck/packages/core/components/Select/styles.module.css/#css-module-data */
+._Select_xjbef_1 {
+  position: relative;
+  z-index: 1;
+}
+._Select-button_xjbef_6 {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  gap: 0px;
+  height: 100%;
+  padding: 4px;
+  padding-right: 2px;
+}
+._Select--hasOptions_xjbef_19 ._Select-button_xjbef_6 {
+  color: currentColor;
+}
+._Select--hasOptions_xjbef_19:not(._Select--disabled_xjbef_23) ._Select-button_xjbef_6 {
+  cursor: pointer;
+}
+._Select-buttonIcon_xjbef_27 {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+._Select--standalone_xjbef_33 ._Select-buttonIcon_xjbef_27 .lucide {
+  height: 18px;
+  width: 18px;
+}
+._Select--actionBar_xjbef_38 ._Select-buttonIcon_xjbef_27 .lucide {
+  height: 16px;
+  width: 16px;
+}
+._Select--hasOptions_xjbef_19:not(._Select--disabled_xjbef_23) ._Select-button_xjbef_6:hover,
+._Select--hasValue_xjbef_44 ._Select-button_xjbef_6 {
+  background: var(--puck-color-grey-10);
+  color: var(--puck-color-azure-04);
+}
+._Select--disabled_xjbef_23 ._Select-button_xjbef_6 {
+  color: var(--puck-color-grey-07);
+}
+._Select--actionBar_xjbef_38 {
+  &._Select--hasOptions_xjbef_19 ._Select-button_xjbef_6:hover,
+  &._Select--hasValue_xjbef_44 ._Select-button_xjbef_6 {
+    background: none;
+    color: var(--puck-color-azure-07);
+  }
+}
+._Select-items_xjbef_61 {
+  background: white;
+  border: 1px solid var(--puck-color-grey-09);
+  border-radius: 8px;
+  margin: 10px 8px;
+  margin-left: 0;
+  padding: 4px;
+  z-index: 2;
+  list-style: none;
+}
+._SelectItem_xjbef_72 {
+  background: transparent;
+  border-radius: 4px;
+  border: none;
+  color: var(--puck-color-grey-04);
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--puck-font-size-xxs);
+  margin: 0;
+  padding: 8px 12px;
+  width: 100%;
+}
+._SelectItem--isSelected_xjbef_87 {
+  background: var(--puck-color-azure-11);
+  color: var(--puck-color-azure-04);
+  font-weight: 500;
+}
+._SelectItem--isSelected_xjbef_87 ._SelectItem-icon_xjbef_93 {
+  color: var(--puck-color-azure-04);
+}
+._SelectItem_xjbef_72:hover {
+  background: var(--puck-color-azure-11);
+  color: var(--puck-color-azure-04);
+}
